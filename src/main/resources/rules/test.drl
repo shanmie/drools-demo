@@ -1,0 +1,18 @@
+package rules;
+dialect  "java"
+
+import com.example.drools.*;
+
+rule "test"
+    when
+        $d : Double();
+    then
+        System.out.println($d);
+end
+
+rule "01"
+    when
+        $user : User(name contains "张")
+    then
+        System.out.println($user);
+end
