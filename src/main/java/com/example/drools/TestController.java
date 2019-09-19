@@ -2,6 +2,7 @@ package com.example.drools;
 
 import com.example.drools.util.KieSessionUtil;
 import org.kie.api.runtime.KieSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +27,17 @@ public class TestController {
         session.fireAllRules();
         session.dispose();
         return "ok";
+    }
+
+
+    @Autowired
+    RestImpl rest;
+
+    @RequestMapping("/test3")
+    public String test3(){
+        rest.testRest();
+        return "ok";
+
     }
 
 }
