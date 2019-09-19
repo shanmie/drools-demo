@@ -43,6 +43,18 @@ public class ElasticsearchRestClientConfiguration {
     @Bean
     public RestHighLevelClient client(@Autowired RestClientBuilder restClientBuilder) {
         restClientBuilder.setMaxRetryTimeoutMillis(60000);
+        restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> {
+            requestConfigBuilder.setConnectTimeout(1000);
+            requestConfigBuilder.setSocketTimeout(30000);
+            requestConfigBuilder.setConnectionRequestTimeout(500);
+            return requestConfigBuilder;
+        });
+        // 异步httpclient连接数配置
+        restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> {
+            httpClientBuilder.setMaxConnTotal(100);
+            httpClientBuilder.setMaxConnPerRoute(100);
+            return httpClientBuilder;
+        });
         return new RestHighLevelClient(restClientBuilder);
     }
 
@@ -59,34 +71,4 @@ public class ElasticsearchRestClientConfiguration {
             return null;
         }
     }
-
-
-    /******** 单节点的另一种的方式 ***********/
-
-    /*@Value("${elasticsearch.node.ip.single}")
-    String string;
-
-    @Value("${elasticsearch.node.port.single}")
-    int port;
-
-    @Bean
-    @Order(1)
-    public RestHighLevelClient clientSingle() {
-        // 异步httpclient连接延时配置
-        RestClientBuilder builder = RestClient
-                .builder(new HttpHost(string, port));
-        builder.setRequestConfigCallback(requestConfigBuilder -> {
-            requestConfigBuilder.setConnectTimeout(1000);
-            requestConfigBuilder.setSocketTimeout(30000);
-            requestConfigBuilder.setConnectionRequestTimeout(500);
-            return requestConfigBuilder;
-        });
-        // 异步httpclient连接数配置
-        builder.setHttpClientConfigCallback(httpClientBuilder -> {
-            httpClientBuilder.setMaxConnTotal(100);
-            httpClientBuilder.setMaxConnPerRoute(100);
-            return httpClientBuilder;
-        });
-        return new RestHighLevelClient(builder);
-    }*/
 }
