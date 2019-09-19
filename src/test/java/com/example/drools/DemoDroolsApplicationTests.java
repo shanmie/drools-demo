@@ -28,6 +28,9 @@ public class DemoDroolsApplicationTests {
     @Autowired
     BookRepository bookRepository;
 
+    @Autowired
+    private RestHighLevelClient client;
+
     @Test
     public void createIndex2(){
 
@@ -77,7 +80,7 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void test1() {
-        RestHighLevelClient client = ElasticConnection.getConnection(null).getRestHighLevelClient();
+        //RestHighLevelClient client = ElasticConnection.getConnection(null).getRestHighLevelClient();
 
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
         QueryBuilder queryBuilder = QueryBuilders.boolQuery()
@@ -95,6 +98,14 @@ public class DemoDroolsApplicationTests {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    @Test
+    public void test2() throws IOException {
+        GetRequest re = new GetRequest("test","book","1");
+        GetResponse documentFields = client.get(re, RequestOptions.DEFAULT);
+        System.out.println(JSONObject.toJSONString(documentFields));
     }
 
 
