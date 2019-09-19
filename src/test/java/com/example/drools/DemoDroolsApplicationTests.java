@@ -65,6 +65,14 @@ public class DemoDroolsApplicationTests {
 
     }
 
+    @Test
+    public void test() throws IOException {
+        RestHighLevelClient client = ElasticConnection.getConnection(null).getRestHighLevelClient();
+        GetRequest re = new GetRequest("test","book","北京");
+        GetResponse documentFields = client.get(re);
+        System.out.println(documentFields.getFields());
+    }
+
 
 
 }
