@@ -1,9 +1,17 @@
 package com.example.drools;
 
+import com.alibaba.fastjson.JSONObject;
+import com.example.drools.config1.ElasticConnection;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,9 +76,40 @@ public class DemoDroolsApplicationTests {
     @Test
     public void test() throws IOException {
         RestHighLevelClient client = ElasticConnection.getConnection(null).getRestHighLevelClient();
-        GetRequest re = new GetRequest("test","book","北京");
-        GetResponse documentFields = client.get(re);
-        System.out.println(documentFields.getFields());
+        GetRequest re = new GetRequest("test","book","1");
+        GetResponse documentFields = client.get(re, RequestOptions.DEFAULT);
+        System.out.println(JSONObject.toJSONString(documentFields));
+    }
+
+    @Test
+    public void test1() {
+        RestHighLevelClient client = ElasticConnection.getConnection(null).getRestHighLevelClient();
+
+        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .filter(QueryBuilders.queryStringQuery("25 AND 有钱人AND 北京").field("bookName"));
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(1000);//每次查询1000条
+        searchSourceBuilder.query(queryBuilder);//设置查询条件
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.types("book");//设置类型
+        try {
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            for (SearchHit hit : response.getHits().getHits()) {
+                System.out.println(hit.getSourceAsMap());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Autowired
+    private RestHighLevelClient client;
+    @Test
+    public void test2() throws IOException {
+        GetRequest re = new GetRequest("test","book","1");
+        GetResponse documentFields = client.get(re, RequestOptions.DEFAULT);
+        System.out.println(JSONObject.toJSONString(documentFields));
     }
 
 

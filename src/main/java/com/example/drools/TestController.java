@@ -30,14 +30,4 @@ public class TestController {
     }
 
 
-    @Autowired
-    RestImpl rest;
-
-    @RequestMapping("/test3")
-    public String test3(){
-        rest.testRest();
-        return "ok";
-
-    }
-
 }

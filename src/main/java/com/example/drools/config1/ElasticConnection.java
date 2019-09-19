@@ -1,4 +1,4 @@
-package com.example.drools;
+package com.example.drools.config1;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -8,12 +8,9 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.*;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -35,7 +32,7 @@ public class ElasticConnection {
     }
     private static final String DEFAULT_SCHEMA = "http";
 
-    private static final String ES_SERVER = "172.0.0.1:9200";
+    private static final String ES_SERVER = "127.0.0.1:9200";
 
     private static final int CONNECT_TIME_OUT = 1000;
     private static final int SOCKET_TIME_OUT = 30000;
@@ -98,12 +95,12 @@ public class ElasticConnection {
                                 int port = Integer.valueOf(sp.get(1));
                                 HttpHost httpHost = new HttpHost(ip, port, DEFAULT_SCHEMA);
                                 httpHosts.add(httpHost);
-                                try {
+                                /*try {
                                     client.addTransportAddress(new TransportAddress(InetAddress.getByName(ip), esProperties.getTcpPort()));
                                 } catch (UnknownHostException e) {
                                     e.printStackTrace();
                                     log.error("TransportClient UnknownHostException",e);
-                                }
+                                }*/
                             });
                             RestClientBuilder builder = RestClient.builder(httpHosts.toArray(new HttpHost[size]));
                             builder.setMaxRetryTimeoutMillis(socketTimeOut);
@@ -134,6 +131,7 @@ public class ElasticConnection {
         }
         return analyseElasticConnection;
     }
+
 
 
     public void close() {

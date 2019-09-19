@@ -1,4 +1,4 @@
-package com.example.drools;
+package com.example.drools.config1;
 
 public interface EsProperties {
 
