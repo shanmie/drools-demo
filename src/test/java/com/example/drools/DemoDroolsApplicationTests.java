@@ -30,22 +30,16 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void createIndex2(){
-        Book book = new Book();
-        book.setId(1);
-        book.setBookName("西游记");
-        book.setAuthor( "吴承恩" );
-        bookRepository.index( book );
-
 
         Book b = new Book();
-        b.setId(4);
-        b.setBookName("北京|有钱人|25");
+        b.setId(9);
+        b.setBookName("出发口岸北京|有钱人|25");
         bookRepository.index( b );
 
 
         Book b2 = new Book();
-        b2.setId(5);
-        b2.setBookName("上海|有钱人|25");
+        b2.setId(10);
+        b2.setBookName("常驻城市北京|有钱人|29");
         bookRepository.index( b2 );
     }
 
@@ -58,12 +52,12 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void useFind() {
-        List<Book> list = bookRepository.findByBookName( "北京|有钱人" );
+        List<Book> list = bookRepository.findByBookName( "出发口岸北京|有钱人" );
         List<Book> list1 = bookRepository.findByBookName( "有钱人" );
         List<Book> list2 = bookRepository.findByBookName( "25" );
-        List<Book> list3 = bookRepository.findByBookName( "25|有钱人" );
-        List<Book> list4 = bookRepository.findByBookName( "25|有钱人|北京" );
-        List<Book> list5 = bookRepository.findByBookName( "北京|有钱人|25" );
+        List<Book> list3 = bookRepository.findByBookName( "29|有钱人" );
+        List<Book> list4 = bookRepository.findByBookName( "29|有钱人|常驻城市北京" );
+        List<Book> list5 = bookRepository.findByBookName( "常驻城市北京|有钱人|25" );
         System.out.println(list);
         System.out.println(list1);
         System.out.println(list2);
@@ -87,7 +81,7 @@ public class DemoDroolsApplicationTests {
 
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
         QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                .filter(QueryBuilders.queryStringQuery("25 AND 有钱人AND 北京").field("bookName"));
+                .filter(QueryBuilders.queryStringQuery("常驻城市北京 AND 有钱人AND 北京").field("bookName"));
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.size(1000);//每次查询1000条
         searchSourceBuilder.query(queryBuilder);//设置查询条件
@@ -101,15 +95,6 @@ public class DemoDroolsApplicationTests {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    @Autowired
-    private RestHighLevelClient client;
-    @Test
-    public void test2() throws IOException {
-        GetRequest re = new GetRequest("test","book","1");
-        GetResponse documentFields = client.get(re, RequestOptions.DEFAULT);
-        System.out.println(JSONObject.toJSONString(documentFields));
     }
 
 
