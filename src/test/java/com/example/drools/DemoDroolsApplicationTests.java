@@ -33,40 +33,38 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void createIndex2(){
-
         Book b = new Book();
-        b.setId(9);
-        b.setBookName("出发口岸北京|有钱人|25");
+        b.setId(1);
+        b.setBookName("出发口岸北京,常驻城市北京,有钱人,25");
         bookRepository.index( b );
 
-
         Book b2 = new Book();
-        b2.setId(10);
-        b2.setBookName("常驻城市北京|有钱人|29");
+        b2.setId(2);
+        b2.setBookName("出发口岸北京,常驻城市上海,有钱人,25");
         bookRepository.index( b2 );
+
+        Book b3 = new Book();
+        b3.setId(3);
+        b3.setBookName("出发口岸上海,常驻城市上海,没钱人,26");
+        bookRepository.index( b3 );
+
+        Book b4 = new Book();
+        b4.setId(4);
+        b4.setBookName("出发口岸上海,常驻城市北京,没钱人,26");
+        bookRepository.index( b4 );
     }
 
     @Test
     public void find(){
-        List<Book> list5 = bookRepository.findByBookName( "北" );
+        List<Book> list5 = bookRepository.findByBookName( "北京" );
         System.out.println(list5);
     }
 
 
     @Test
     public void useFind() {
-        List<Book> list = bookRepository.findByBookName( "出发口岸北京|有钱人" );
-        List<Book> list1 = bookRepository.findByBookName( "有钱人" );
-        List<Book> list2 = bookRepository.findByBookName( "25" );
-        List<Book> list3 = bookRepository.findByBookName( "29|有钱人" );
-        List<Book> list4 = bookRepository.findByBookName( "29|有钱人|常驻城市北京" );
-        List<Book> list5 = bookRepository.findByBookName( "常驻城市北京|有钱人|25" );
+        List<Book> list = bookRepository.findByBookName( "出发口岸北京,常驻城市北京,有钱人,25" );
         System.out.println(list);
-        System.out.println(list1);
-        System.out.println(list2);
-        System.out.println(list3);
-        System.out.println(list4);
-        System.out.println(list5);
 
     }
 
@@ -80,8 +78,6 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void test1() {
-        //RestHighLevelClient client = ElasticConnection.getConnection(null).getRestHighLevelClient();
-
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
         QueryBuilder queryBuilder = QueryBuilders.boolQuery()
                 .filter(QueryBuilders.queryStringQuery("常驻城市北京 AND 有钱人AND 北京").field("bookName"));
