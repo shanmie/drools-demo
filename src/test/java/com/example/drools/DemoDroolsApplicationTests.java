@@ -63,7 +63,7 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void useFind() {
-        List<Book> list = bookRepository.findByBookName( "出发口岸北京,常驻城市北京,有钱人,25" );
+        List<Book> list = bookRepository.findByBookName( "出发口岸北京,常驻城市北京" );
         System.out.println(list);
 
     }
@@ -80,7 +80,7 @@ public class DemoDroolsApplicationTests {
     public void test1() {
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
         QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                .filter(QueryBuilders.queryStringQuery("常驻城市北京 AND 有钱人AND 北京").field("bookName"));
+                .filter(QueryBuilders.queryStringQuery("常驻城市北京,出发口岸北京").field("bookName"));
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.size(1000);//每次查询1000条
         searchSourceBuilder.query(queryBuilder);//设置查询条件

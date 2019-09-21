@@ -1,0 +1,46 @@
+#删除模板
+curl -X DELETE '127.0.0.1:9200/_template/test_template'
+
+#修改模板 feild类型为keyword不分词,如果为text默认分词
+curl -X PUT "127.0.0.1:9200/_template/test_template" -H 'Content-Type: application/json' -d'
+{
+	"index_patterns": ["test*"],
+	"mappings": {
+		"book": {
+			"dynamic": false,
+			"properties": {
+				"bookName": {
+					"type": "text",
+     				"analyzer": "ik_max_word",
+     				"search_analyzer": "ik_max_word"
+				}
+			}
+		}
+	}
+}
+'
+#删掉所有索引
+curl -X DELETE '127.0.0.1:9200/*'
+
+#查看该查询如何默认分词
+curl -H "Content-Type: application/json" GET 'http://127.0.0.1:9200/_analyze?pretty=true' -d '
+{
+	"text":"出发口岸北京,常驻城市北京,有钱人,25"
+}
+'
+
+#查看该查询如何使用中文分词 max 模式
+curl -H "Content-Type: application/json" POST 'http://127.0.0.1:9200/_analyze?pretty=true' -d '
+{
+	"text": "出发口岸北京,常驻城市北京,有钱人,25",
+  	"analyzer": "ik_max_word"
+}
+'
+
+#查看该查询如何使用中文分词 smart 模式
+curl -H "Content-Type: application/json" POST 'http://127.0.0.1:9200/_analyze?pretty=true' -d '
+{
+	"text": "出发口岸北京,常驻城市北京,有钱人,25",
+  	"analyzer": "ik_smart"
+}
+'
