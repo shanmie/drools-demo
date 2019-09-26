@@ -259,10 +259,10 @@ public class DemoDroolsApplicationTests {
                 System.out.println("name:"+name+":cond:"+cond+":value:"+value);
                 //第三层
                 if ("IN".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.must(QueryBuilders.matchQuery(name, value));
+                    boolQueryBuilder2.should(QueryBuilders.matchQuery(name, value).operator("AND".equalsIgnoreCase(inConditions) ? Operator.AND : Operator.OR));
                 }
                 if ("NOT".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value));
+                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value).operator("AND".equalsIgnoreCase(inConditions) ? Operator.AND : Operator.OR));
                 }
 
             }
