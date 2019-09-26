@@ -139,13 +139,70 @@ public class DemoDroolsApplicationTests {
                 "}";
     }
 
+    public String json2(){
+        return "{\n" +
+                "  \"tags\": [\n" +
+                "    {\n" +
+                "      \"in_conditions\": \"AND\",\n" +
+                "      \"content\": [\n" +
+                "        {\n" +
+                "          \"id\": \"1234\",\n" +
+                "          \"conditions\": \"IN\",\n" +
+                "          \"name\":\"country\",\n" +
+                "          \"value\": \"美国,日本,新西兰\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "          \"id\": \"1238\",\n" +
+                "          \"conditions\": \"NOT\",\n" +
+                "           \"name\":\"出发口岸\",\n" +
+                "          \"value\": \"北京,成都,香港\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"in_conditions\": \"AND\",\n" +
+                "      \"content\": [\n" +
+                "        {\n" +
+                "          \"id\": \"1299\",\n" +
+                "          \"conditions\": \"IN\",\n" +
+                "          \"name\":\"sex\",\n" +
+                "          \"value\": \"男\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"in_conditions\": \"OR\",\n" +
+                "      \"content\": [\n" +
+                "        {\n" +
+                "          \"id\": \"1237\",\n" +
+                "          \"conditions\": \"IN\",\n" +
+                "          \"name\":\"是否带孩子\",\n" +
+                "          \"value\": \"亲子\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "          \"id\": \"1237\",\n" +
+                "          \"conditions\": \"NOT\",\n" +
+                "          \"name\":\"决策周期\",\n" +
+                "          \"value\": \"45\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"out_conditions\": \"OR\",\n" +
+                "  \"tags_id\": [\n" +
+                "    1200,\n" +
+                "    1237,\n" +
+                "    1204,\n" +
+                "    1299,\n" +
+                "    1234\n" +
+                "  ]\n" +
+                "}";
+    }
+
     @Test
     public void test2(){
-
         JSONObject j = JSONObject.parseObject(json());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
-
-       // Map map1 = JSONObject.toJavaObject(tags, Map.class);
 
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
         BoolQueryBuilder builder = QueryBuilders.boolQuery();
@@ -156,9 +213,9 @@ public class DemoDroolsApplicationTests {
             String cond = MapUtils.getString(map, "conditions");
             String value = MapUtils.getString(map, "value");
 
-            /*if ("AND".equalsIgnoreCase(cond)){
+            if ("AND".equalsIgnoreCase(cond)){
                 builder.must(QueryBuilders.matchQuery(name,value).operator(Operator.AND));
-            }*/
+            }
             if ("OR".equalsIgnoreCase(cond)){
                 builder.should(QueryBuilders.matchQuery(name,value).operator(Operator.OR));
             }
@@ -166,6 +223,7 @@ public class DemoDroolsApplicationTests {
         searchSourceBuilder.query(builder);//设置查询条件
         searchRequest.source(searchSourceBuilder);
         searchRequest.types("tag");//设置类型
+        searchSourceBuilder.size(1000);
         try {
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
             for (SearchHit hit : response.getHits().getHits()) {
@@ -177,6 +235,26 @@ public class DemoDroolsApplicationTests {
 
 
 
+    }
+
+    @Test
+    public void test3(){
+        JSONObject j = JSONObject.parseObject(json2());
+        List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
+
+        for (Object obj: tags) {
+            Map map = (Map) obj;
+            String inConditions = MapUtils.getString(map, "in_conditions");
+            System.out.println(inConditions);
+            Object content = MapUtils.getObject(map, "content");
+            List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
+            for (Map coMap:maps) {
+                String name = MapUtils.getString(coMap, "name");
+                String cond = MapUtils.getString(coMap, "conditions");
+                String value = MapUtils.getString(coMap, "value");
+                System.out.println("name:"+name+":cond:"+cond+":value:"+value);
+            }
+        }
     }
 
 
