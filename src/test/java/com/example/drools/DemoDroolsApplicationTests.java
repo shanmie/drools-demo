@@ -143,7 +143,7 @@ public class DemoDroolsApplicationTests {
         return "{\n" +
                 "  \"tags\": [\n" +
                 "    {\n" +
-                "      \"in_conditions\": \"AND\",\n" +
+                "      \"in_conditions\": \"OR\",\n" +
                 "      \"content\": [\n" +
                 "        {\n" +
                 "          \"conditions\": \"IN\",\n" +
@@ -153,8 +153,13 @@ public class DemoDroolsApplicationTests {
                 "        {\n" +
                 "          \"conditions\": \"IN\",\n" +
                 "          \"name\":\"country\",\n" +
-                "          \"value\": \"新西兰\"\n" +
-                "        },\n" +
+                "          \"value\": \"韩国\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"in_conditions\": \"OR\",\n" +
+                "      \"content\": [\n" +
                 "        {\n" +
                 "          \"conditions\": \"NOT\",\n" +
                 "           \"name\":\"出发口岸\",\n" +
@@ -183,7 +188,7 @@ public class DemoDroolsApplicationTests {
                 "      ]\n" +
                 "    },\n" +
                 "    {\n" +
-                "      \"in_conditions\": \"OR\",\n" +
+                "      \"in_conditions\": \"AND\",\n" +
                 "      \"content\": [\n" +
                 "        {\n" +
                 "          \"conditions\": \"IN\",\n" +
@@ -193,7 +198,7 @@ public class DemoDroolsApplicationTests {
                 "      ]\n" +
                 "    }\n" +
                 "  ],\n" +
-                "  \"out_conditions\": \"OR\"\n" +
+                "  \"out_conditions\": \"AND\"\n" +
                 "}\n";
     }
 
@@ -225,7 +230,7 @@ public class DemoDroolsApplicationTests {
         try {
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
             for (SearchHit hit : response.getHits().getHits()) {
-                System.out.println("----->"+hit.getSourceAsMap());
+                System.out.println("-------------->"+hit.getSourceAsMap());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -234,6 +239,7 @@ public class DemoDroolsApplicationTests {
 
 
     }
+
 
     @Test
     public void test3(){
@@ -244,7 +250,6 @@ public class DemoDroolsApplicationTests {
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
         BoolQueryBuilder boolQueryBuilder0 = QueryBuilders.boolQuery();
         BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
-
         for (Object obj: tags) {
             Map map = (Map) obj;
             String inConditions = MapUtils.getString(map, "in_conditions");
@@ -259,10 +264,10 @@ public class DemoDroolsApplicationTests {
                 System.out.println("name:"+name+":cond:"+cond+":value:"+value);
                 //第三层
                 if ("IN".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.should(QueryBuilders.matchQuery(name, value).operator("AND".equalsIgnoreCase(inConditions) ? Operator.AND : Operator.OR));
+                    boolQueryBuilder2.must(QueryBuilders.matchQuery(name, value).operator(Operator.AND));
                 }
                 if ("NOT".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value).operator("AND".equalsIgnoreCase(inConditions) ? Operator.AND : Operator.OR));
+                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value).operator(Operator.OR));
                 }
 
             }
@@ -287,8 +292,9 @@ public class DemoDroolsApplicationTests {
         searchSourceBuilder.size(1000);
         try {
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            int i =1;
             for (SearchHit hit : response.getHits().getHits()) {
-                System.out.println("------>"+hit.getSourceAsMap());
+                System.out.println("-----+--->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -298,8 +304,63 @@ public class DemoDroolsApplicationTests {
 
 
 
+    @Test
+    public void test4(){
+        JSONObject j = JSONObject.parseObject(json2());
+        List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
+        String outConditions = j.getString("out_conditions");
 
+        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
+        BoolQueryBuilder boolQueryBuilder0 = QueryBuilders.boolQuery();
+        BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
 
+        for (Object obj: tags) {
+            Map map = (Map) obj;
+            String inConditions = MapUtils.getString(map, "in_conditions");
+            Object content = MapUtils.getObject(map, "content");
+            List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
+            BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
+            for (Map coMap:maps) {
+                String name = MapUtils.getString(coMap, "name");
+                String cond = MapUtils.getString(coMap, "conditions");
+                String value = MapUtils.getString(coMap, "value");
+                //第三层
+                if ("IN".equalsIgnoreCase(cond)){
+                    if ("AND".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilder2.must(QueryBuilders.matchQuery(name, value));
+                    }
+                    if ("OR".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilder2.should(QueryBuilders.matchQuery(name, value));
+                    }
+                }
+                if ("NOT".equalsIgnoreCase(cond)){
+                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value) );
+                }
+            }
+            if ("AND".equalsIgnoreCase(outConditions)) {
+                boolQueryBuilder1.must(boolQueryBuilder2);
+            }
+            if ("OR".equalsIgnoreCase(outConditions)) {
+                boolQueryBuilder1.should(boolQueryBuilder2);
+            }
+
+        }
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(boolQueryBuilder1);//设置查询条件
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.types("tag");//设置类型
+        searchSourceBuilder.size(1000);
+        try {
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            int i = 1;
+            for (SearchHit hit : response.getHits().getHits()) {
+                System.out.println("------++-->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
 
