@@ -146,16 +146,29 @@ public class DemoDroolsApplicationTests {
                 "      \"in_conditions\": \"AND\",\n" +
                 "      \"content\": [\n" +
                 "        {\n" +
-                "          \"id\": \"1234\",\n" +
                 "          \"conditions\": \"IN\",\n" +
                 "          \"name\":\"country\",\n" +
-                "          \"value\": \"美国,日本,新西兰\"\n" +
+                "          \"value\": \"日本\"\n" +
                 "        },\n" +
                 "        {\n" +
-                "          \"id\": \"1238\",\n" +
+                "          \"conditions\": \"IN\",\n" +
+                "          \"name\":\"country\",\n" +
+                "          \"value\": \"新西兰\"\n" +
+                "        },\n" +
+                "        {\n" +
                 "          \"conditions\": \"NOT\",\n" +
                 "           \"name\":\"出发口岸\",\n" +
-                "          \"value\": \"北京,成都,香港\"\n" +
+                "          \"value\": \"北京\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "          \"conditions\": \"NOT\",\n" +
+                "           \"name\":\"出发口岸\",\n" +
+                "          \"value\": \"上海\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "          \"conditions\": \"NOT\",\n" +
+                "           \"name\":\"出发口岸\",\n" +
+                "          \"value\": \"香港\"\n" +
                 "        }\n" +
                 "      ]\n" +
                 "    },\n" +
@@ -163,7 +176,6 @@ public class DemoDroolsApplicationTests {
                 "      \"in_conditions\": \"AND\",\n" +
                 "      \"content\": [\n" +
                 "        {\n" +
-                "          \"id\": \"1299\",\n" +
                 "          \"conditions\": \"IN\",\n" +
                 "          \"name\":\"sex\",\n" +
                 "          \"value\": \"男\"\n" +
@@ -174,29 +186,15 @@ public class DemoDroolsApplicationTests {
                 "      \"in_conditions\": \"OR\",\n" +
                 "      \"content\": [\n" +
                 "        {\n" +
-                "          \"id\": \"1237\",\n" +
                 "          \"conditions\": \"IN\",\n" +
                 "          \"name\":\"是否带孩子\",\n" +
-                "          \"value\": \"亲子\"\n" +
-                "        },\n" +
-                "        {\n" +
-                "          \"id\": \"1237\",\n" +
-                "          \"conditions\": \"NOT\",\n" +
-                "          \"name\":\"决策周期\",\n" +
-                "          \"value\": \"45\"\n" +
+                "          \"value\": \"非亲子\"\n" +
                 "        }\n" +
                 "      ]\n" +
                 "    }\n" +
                 "  ],\n" +
-                "  \"out_conditions\": \"OR\",\n" +
-                "  \"tags_id\": [\n" +
-                "    1200,\n" +
-                "    1237,\n" +
-                "    1204,\n" +
-                "    1299,\n" +
-                "    1234\n" +
-                "  ]\n" +
-                "}";
+                "  \"out_conditions\": \"OR\"\n" +
+                "}\n";
     }
 
     @Test
@@ -241,6 +239,11 @@ public class DemoDroolsApplicationTests {
     public void test3(){
         JSONObject j = JSONObject.parseObject(json2());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
+        String outConditions = j.getString("out_conditions");
+
+        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
+        BoolQueryBuilder boolQueryBuilder0 = QueryBuilders.boolQuery();
+        BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
 
         for (Object obj: tags) {
             Map map = (Map) obj;
@@ -248,15 +251,49 @@ public class DemoDroolsApplicationTests {
             System.out.println(inConditions);
             Object content = MapUtils.getObject(map, "content");
             List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
+            BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
             for (Map coMap:maps) {
                 String name = MapUtils.getString(coMap, "name");
                 String cond = MapUtils.getString(coMap, "conditions");
                 String value = MapUtils.getString(coMap, "value");
                 System.out.println("name:"+name+":cond:"+cond+":value:"+value);
+                //第三层
+                if ("IN".equalsIgnoreCase(cond)){
+                    boolQueryBuilder2.must(QueryBuilders.matchQuery(name, value));
+                }
+                if ("NOT".equalsIgnoreCase(cond)){
+                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value));
+                }
+
             }
+            if ("AND".equalsIgnoreCase(inConditions)) {
+                boolQueryBuilder1.must(boolQueryBuilder2);
+            }
+            if ("OR".equalsIgnoreCase(inConditions)) {
+                boolQueryBuilder1.should(boolQueryBuilder2);
+            }
+
+        }
+        if ("AND".equalsIgnoreCase(outConditions)) {
+            boolQueryBuilder0.must(boolQueryBuilder1);
+        }
+        if ("OR".equalsIgnoreCase(outConditions)) {
+            boolQueryBuilder0.should(boolQueryBuilder1);
+        }
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(boolQueryBuilder0);//设置查询条件
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.types("tag");//设置类型
+        searchSourceBuilder.size(1000);
+        try {
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            for (SearchHit hit : response.getHits().getHits()) {
+                System.out.println("------>"+hit.getSourceAsMap());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-
 
 
 
