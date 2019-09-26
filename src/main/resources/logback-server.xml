@@ -1,0 +1,66 @@
+<configuration debug="true">
+
+    <property name="LOG_FILE_PATH" value="/LOG/APP.log"></property>
+    <property name="LOG_FILE" value="%date{yyyy-MM-dd HH:mm:ss} | %highlight(%-5level) | %boldYellow(%thread) | %boldGreen(%logger) | %msg%n"/>
+    <property name="STDOUT" value="%date{yyyy-MM-dd HH:mm:ss} - [%thread] %highlight(%-5level) %logger{15} - %boldCyan(%msg) %n"></property>
+    <property name="PROJECT" value="%date{yyyy-MM-dd HH:mm:ss} - [%thread] %highlight(%-5level) %boldMagenta(%logger{15}) - %boldGreen(%msg) %n"></property>
+    <property name="SQL" value="%date{yyyy-MM-dd HH:mm:ss} - [%thread] %highlight(%-5level) %yellow(%logger{15}) - %yellow(%msg) %n"></property>
+
+    <!-- 文件输出注释 -->
+    <appender name="LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_FILE_PATH}</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>%d{yyyy-MM-dd}.log</FileNamePattern>
+            <MaxHistory>100</MaxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_FILE}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 系统注释 控制台输出-->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <withJansi>true</withJansi>
+        <encoder>
+            <pattern>${STDOUT}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 业务注释 -->
+    <appender name="PROJECT" class="ch.qos.logback.core.ConsoleAppender">
+        <withJansi>true</withJansi>
+        <encoder>
+            <pattern>${PROJECT}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- SQL语句注释 -->
+    <appender name="SQL" class="ch.qos.logback.core.ConsoleAppender">
+        <withJansi>true</withJansi>
+        <encoder>
+            <pattern>${SQL}</pattern>
+        </encoder>
+    </appender>
+
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="LOG_FILE"/>
+    </root>
+
+    <logger name="com.shijiebang.cdp.controller" additivity="false" level="DEBUG">
+        <appender-ref ref="PROJECT" />
+        <appender-ref ref="LOG_FILE"/>
+    </logger>
+
+    <logger name="com.shijiebang.cdp.service" additivity="false" level="DEBUG">
+        <appender-ref ref="PROJECT" />
+        <appender-ref ref="LOG_FILE"/>
+    </logger>
+
+    <logger name="com.shijiebang.xpower.dao" additivity="false" level="DEBUG">
+        <appender-ref ref="SQL" />
+        <appender-ref ref="LOG_FILE"/>
+    </logger>
+
+</configuration>
