@@ -40,6 +40,48 @@
   ],
   "out_conditions": "AND"
 }
+------------------------- 查 1 级 只查询country 不包含 日本  或  韩国 -------------------
+{
+  "tags": [
+    {
+      "in_conditions": "OR",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+------------------------- 查 1 级 只查询country 不包含 日本  和  韩国 -------------------
+{
+  "tags": [
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
 ------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
 {
   "tags": [
@@ -54,13 +96,45 @@
         {
           "conditions": "IN",
           "name":"country",
-          "value": "新西兰"
+          "value": "韩国"
         }
       ]
     },
 
     {
       "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "IN",
+          "name":"sex",
+          "value": "男"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 不是男-------------------
+{
+  "tags": [
+    {
+      "in_conditions": "OR",
+      "content": [
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    },
+
+    {
+      "in_conditions": "OR",
       "content": [
         {
           "conditions": "IN",
@@ -86,7 +160,71 @@
         {
           "conditions": "IN",
           "name":"country",
-          "value": "新西兰"
+          "value": "韩国"
+        }
+      ]
+    },
+
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"sex",
+          "value": "男"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+------------------------- 查 2 级 只查询country 包含 日本  和  韩国 并且 性别 不是男-------------------
+{
+  "tags": [
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    },
+
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"sex",
+          "value": "男"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+------------------------- 查 2 级 只查询country 不包含 日本  或  韩国 并且 性别 男-------------------
+{
+  "tags": [
+    {
+      "in_conditions": "OR",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "韩国"
         }
       ]
     },
@@ -104,7 +242,120 @@
   ],
   "out_conditions": "AND"
 }
-------------------------- 查 3 级 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 不包含 北京 或 上海 或 香港-------------------
+------------------------- 查 2 级 只查询country 不包含 日本  或  韩国 并且 性别 不是男-------------------
+{
+  "tags": [
+    {
+      "in_conditions": "OR",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "NOT",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    },
+
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "IN",
+          "name":"sex",
+          "value": "男"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+------------------------- 查 2 级 只查询country 不包含 日本  和  韩国 并且 性别 男-------------------
+{
+  "tags": [
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    },
+
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"sex",
+          "value": "男"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+------------------------- 查 2 级 只查询country 不包含 日本  和  韩国 并且 性别 不是男-------------------
+{
+  "tags": [
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "日本"
+        },
+        {
+          "conditions": "IN",
+          "name":"country",
+          "value": "韩国"
+        }
+      ]
+    },
+
+    {
+      "in_conditions": "AND",
+      "content": [
+        {
+          "conditions": "NOT",
+          "name":"sex",
+          "value": "男"
+        }
+      ]
+    }
+  ],
+  "out_conditions": "AND"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------- 查 3 级 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 包含 北京 或 上海 或 香港-------------------
 {
   "tags": [
     {
@@ -118,7 +369,7 @@
         {
           "conditions": "IN",
           "name": "country",
-          "value": "新西兰"
+          "value": "韩国"
         }
       ]
     },
@@ -136,17 +387,17 @@
       "in_conditions": "OR",
       "content": [
         {
-          "conditions": "NOT",
+          "conditions": "IN",
           "name": "出发口岸",
           "value": "北京"
         },
         {
-          "conditions": "NOT",
+          "conditions": "IN",
           "name": "出发口岸",
           "value": "上海"
         },
         {
-          "conditions": "NOT",
+          "conditions": "IN",
           "name": "出发口岸",
           "value": "香港"
         }
@@ -155,60 +406,3 @@
   ],
   "out_conditions": "AND"
 }
-------------------------- 查 3 级 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 不包含 北京 和 上海 和 香港-------------------
-{
-  "tags": [
-    {
-      "in_conditions": "OR",
-      "content": [
-        {
-          "conditions": "IN",
-          "name": "country",
-          "value": "日本"
-        },
-        {
-          "conditions": "IN",
-          "name": "country",
-          "value": "新西兰"
-        }
-      ]
-    },
-    {
-      "in_conditions": "AND",
-      "content": [
-        {
-          "conditions": "IN",
-          "name": "sex",
-          "value": "男"
-        }
-      ]
-    },
-    {
-      "in_conditions": "AND",
-      "content": [
-        {
-          "conditions": "NOT",
-          "name": "出发口岸",
-          "value": "北京"
-        },
-        {
-          "conditions": "NOT",
-          "name": "出发口岸",
-          "value": "上海"
-        },
-        {
-          "conditions": "NOT",
-          "name": "出发口岸",
-          "value": "香港"
-        }
-      ]
-    }
-  ],
-  "out_conditions": "AND"
-}
-------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
-------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
-------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
-------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
-------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
-------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 男-------------------
