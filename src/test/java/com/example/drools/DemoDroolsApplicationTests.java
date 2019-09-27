@@ -1,16 +1,9 @@
 package com.example.drools;
 
 import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.EasyExcelFactory;
-import com.alibaba.excel.ExcelReader;
-import com.alibaba.excel.support.ExcelTypeEnum;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Maps;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,14 +17,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
+import sun.misc.IOUtils;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -113,98 +105,19 @@ public class DemoDroolsApplicationTests {
 
     }
 
-    public String json(){
-        return  "{\n" +
-                "\t\"tags\":\n" +
-                "\t[\n" +
-                "\t\t{\n" +
-                "\t\t\t\"name\":\"出发口岸\",\n" +
-                "\t\t\t\"value\":\"上海市,成都市,广州市,北京市\",\n" +
-                "\t\t\t\"conditions\":\"AND\"\n" +
-                "\t\t},\n" +
-                "\t\t{\n" +
-                "\t\t\t\"name\":\"country\",\n" +
-                "\t\t\t\"value\":\"日本,新西兰,西班牙,美国\",\n" +
-                "\t\t\t\"conditions\":\"OR\"\n" +
-                "\t\t},\n" +
-                "\t\t{\n" +
-                "\t\t\t\"name\":\"sex\",\n" +
-                "\t\t\t\"value\":\"男\",\n" +
-                "\t\t\t\"conditions\":\"LIKE\"\n" +
-                "\t\t}\n" +
-                "\n" +
-                "\t],\n" +
-                "\t\"out_confitions\":\"AND\"\n" +
-                "\n" +
-                "}";
-    }
-
-    public String json2(){
-        return "{\n" +
-                "  \"tags\": [\n" +
-                "    {\n" +
-                "      \"in_conditions\": \"OR\",\n" +
-                "      \"content\": [\n" +
-                "        {\n" +
-                "          \"conditions\": \"IN\",\n" +
-                "          \"name\":\"country\",\n" +
-                "          \"value\": \"日本\"\n" +
-                "        },\n" +
-                "        {\n" +
-                "          \"conditions\": \"IN\",\n" +
-                "          \"name\":\"country\",\n" +
-                "          \"value\": \"韩国\"\n" +
-                "        }\n" +
-                "      ]\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"in_conditions\": \"OR\",\n" +
-                "      \"content\": [\n" +
-                "        {\n" +
-                "          \"conditions\": \"NOT\",\n" +
-                "           \"name\":\"出发口岸\",\n" +
-                "          \"value\": \"北京\"\n" +
-                "        },\n" +
-                "        {\n" +
-                "          \"conditions\": \"NOT\",\n" +
-                "           \"name\":\"出发口岸\",\n" +
-                "          \"value\": \"上海\"\n" +
-                "        },\n" +
-                "        {\n" +
-                "          \"conditions\": \"NOT\",\n" +
-                "           \"name\":\"出发口岸\",\n" +
-                "          \"value\": \"香港\"\n" +
-                "        }\n" +
-                "      ]\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"in_conditions\": \"AND\",\n" +
-                "      \"content\": [\n" +
-                "        {\n" +
-                "          \"conditions\": \"IN\",\n" +
-                "          \"name\":\"sex\",\n" +
-                "          \"value\": \"男\"\n" +
-                "        }\n" +
-                "      ]\n" +
-                "    },\n" +
-                "    {\n" +
-                "      \"in_conditions\": \"AND\",\n" +
-                "      \"content\": [\n" +
-                "        {\n" +
-                "          \"conditions\": \"IN\",\n" +
-                "          \"name\":\"是否带孩子\",\n" +
-                "          \"value\": \"非亲子\"\n" +
-                "        }\n" +
-                "      ]\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"out_conditions\": \"AND\"\n" +
-                "}\n";
-    }
+    public String parseJson(){
+       ClassPathResource resource = new ClassPathResource("conditions.json");
+       try {
+           return new String(IOUtils.readFully(resource.getInputStream(), -1,true));
+       } catch (IOException e) {
+           e.printStackTrace();
+       }
+       return null;
+   }
 
     @Test
     public void test2(){
-        JSONObject j = JSONObject.parseObject(json());
+        JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
 
         SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
@@ -240,10 +153,9 @@ public class DemoDroolsApplicationTests {
 
     }
 
-
     @Test
     public void test3(){
-        JSONObject j = JSONObject.parseObject(json2());
+        JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
         String outConditions = j.getString("out_conditions");
 
@@ -301,12 +213,10 @@ public class DemoDroolsApplicationTests {
         }
     }
 
-
-
-
     @Test
-    public void test4(){
-        JSONObject j = JSONObject.parseObject(json2());
+    public void test4() {
+
+        JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
         String outConditions = j.getString("out_conditions");
 
@@ -334,7 +244,15 @@ public class DemoDroolsApplicationTests {
                     }
                 }
                 if ("NOT".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value) );
+                    if ("AND".equalsIgnoreCase(inConditions)) {
+                        System.out.println("name:"+name+":value:"+value);
+                        boolQueryBuilder2.mustNot(QueryBuilders.termQuery(name,value));
+                    }
+                    if ("OR".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value) );
+                    }
+
+
                 }
             }
             if ("AND".equalsIgnoreCase(outConditions)) {
