@@ -137,7 +137,7 @@
       "in_conditions": "OR",
       "content": [
         {
-          "conditions": "IN",
+          "conditions": "NOT",
           "name":"sex",
           "value": "男"
         }
@@ -169,7 +169,7 @@
       "in_conditions": "AND",
       "content": [
         {
-          "conditions": "NOT",
+          "conditions": "IN",
           "name":"sex",
           "value": "男"
         }
@@ -265,7 +265,7 @@
       "in_conditions": "AND",
       "content": [
         {
-          "conditions": "IN",
+          "conditions": "NOT",
           "name":"sex",
           "value": "男"
         }
@@ -281,12 +281,12 @@
       "in_conditions": "AND",
       "content": [
         {
-          "conditions": "IN",
+          "conditions": "NOT",
           "name":"country",
           "value": "日本"
         },
         {
-          "conditions": "IN",
+          "conditions": "NOT",
           "name":"country",
           "value": "韩国"
         }
@@ -297,7 +297,7 @@
       "in_conditions": "AND",
       "content": [
         {
-          "conditions": "NOT",
+          "conditions": "IN",
           "name":"sex",
           "value": "男"
         }
@@ -313,12 +313,12 @@
       "in_conditions": "AND",
       "content": [
         {
-          "conditions": "IN",
+          "conditions": "NOT",
           "name":"country",
           "value": "日本"
         },
         {
-          "conditions": "IN",
+          "conditions": "NOT",
           "name":"country",
           "value": "韩国"
         }
