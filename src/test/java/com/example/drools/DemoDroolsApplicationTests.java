@@ -49,59 +49,22 @@ public class DemoDroolsApplicationTests {
 
     @Test
     public void createIndex() throws IOException {
-        Book book = new Book();
-        book.setId(5);
-        book.setBookName("出发口岸南京,常驻城市上海,CEO,30");
-        IndexRequest indexRequest = new IndexRequest("test", "book");
+        Tag tag = new Tag();
+        tag.setUid(1);
+        tag.setCountry("印度,印度尼西亚");
+        tag.set出发口岸("陕西");
+        tag.setSex("男");
+        tag.set是否带孩子("非亲子");
+        tag.set决策周期(43);
+        tag.setLocation("南京");
+        IndexRequest indexRequest = new IndexRequest("test", "tag");
         ObjectMapper mapper = new ObjectMapper();
-        byte[] json = mapper.writeValueAsBytes(book);
+        byte[] json = mapper.writeValueAsBytes(tag);
         indexRequest.source(json, XContentType.JSON);
         client.index(indexRequest,RequestOptions.DEFAULT);
     }
 
-    @Test
-    public void test() {
-        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
-        QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                .filter(QueryBuilders.matchPhraseQuery("bookName","出发口岸北京,有钱人"));
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.size(1000);//每次查询1000条
-        searchSourceBuilder.query(queryBuilder);//设置查询条件
-        searchRequest.source(searchSourceBuilder);
-        searchRequest.types("book");//设置类型
-        try {
-            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            for (SearchHit hit : response.getHits().getHits()) {
-                System.out.println("---->"+hit.getSourceAsMap());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
-    @Test
-    public void test1(){
-        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
-
-        //QueryStringQueryBuilder queryBuilder = QueryBuilders.queryStringQuery("出发口岸北京,常驻城市北京").field("bookName").defaultOperator(Operator.AND);
-
-        //TermsQueryBuilder queryBuilder = QueryBuilders.termsQuery("bookName", "出发口岸北京,常驻城市北京");
-        MatchQueryBuilder queryBuilder = QueryBuilders.matchQuery("country", "日本,新西兰,西班牙,美国").operator(Operator.OR);
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.size(1000);//每次查询1000条
-        searchSourceBuilder.query(queryBuilder);//设置查询条件
-        searchRequest.source(searchSourceBuilder);
-        searchRequest.types("tag");//设置类型
-        try {
-            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            for (SearchHit hit : response.getHits().getHits()) {
-                System.out.println("--->"+hit.getSourceAsMap());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
 
     public String parseJson(){
        ClassPathResource resource = new ClassPathResource("conditions.json");
@@ -113,46 +76,10 @@ public class DemoDroolsApplicationTests {
        return null;
    }
 
-    @Test
-    public void test2(){
-        JSONObject j = JSONObject.parseObject(parseJson());
-        List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
 
-        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
-        BoolQueryBuilder builder = QueryBuilders.boolQuery();
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        for (Object obj: tags) {
-            Map map = (Map) obj;
-            String name = MapUtils.getString(map, "name");
-            String cond = MapUtils.getString(map, "conditions");
-            String value = MapUtils.getString(map, "value");
-
-            if ("AND".equalsIgnoreCase(cond)){
-                builder.must(QueryBuilders.matchQuery(name,value).operator(Operator.AND));
-            }
-            if ("OR".equalsIgnoreCase(cond)){
-                builder.should(QueryBuilders.matchQuery(name,value).operator(Operator.OR));
-            }
-        }
-        searchSourceBuilder.query(builder);//设置查询条件
-        searchRequest.source(searchSourceBuilder);
-        searchRequest.types("tag");//设置类型
-        searchSourceBuilder.size(1000);
-        try {
-            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            for (SearchHit hit : response.getHits().getHits()) {
-                System.out.println("-------------->"+hit.getSourceAsMap());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-
-    }
 
     @Test
-    public void test3(){
+    public void test1(){
         JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
         String outConditions = j.getString("out_conditions");
@@ -212,7 +139,7 @@ public class DemoDroolsApplicationTests {
     }
 
     @Test
-    public void test4() {
+    public void test2() {
 
         JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);

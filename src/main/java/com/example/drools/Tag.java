@@ -11,4 +11,5 @@ public class Tag {
     private String 是否带孩子;
     private int 决策周期;
     private String location;
+
 }
