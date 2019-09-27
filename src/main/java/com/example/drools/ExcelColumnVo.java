@@ -2,10 +2,6 @@ package com.example.drools;
 
 import lombok.Data;
 
-/**
- * @author deacon
- * @since 2019/9/24
- */
 @Data
 public class ExcelColumnVo {
     int uid;

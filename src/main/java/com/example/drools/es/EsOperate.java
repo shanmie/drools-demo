@@ -15,10 +15,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author deacon
- * @since 2019/9/25
- */
 @Service
 @Slf4j
 public class EsOperate {

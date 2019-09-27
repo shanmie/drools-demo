@@ -37,15 +37,13 @@ public class DemoDroolsApplicationTests {
     ExcelListener excelListener;
 
     @Test
-    public void testExcelCreate(){
+    public void testExcelCreate() throws IOException {
         // 写法1：
-        String fileName = "/Users/admin/Downloads/blood.xlsx";
+        //String fileName = "/Users/admin/Downloads/blood.xlsx";
         // 这里 需要指定读用哪个class去读，然后读取第一个sheet 文件流会自动关闭
         //EasyExcel.read(fileName, Object.class, excelListener).sheet().doRead();
-
-        EasyExcel.read(fileName,excelListener).sheet().doRead();
-
-
+        ClassPathResource resource = new ClassPathResource("blood.xlsx");
+        EasyExcel.read(resource.getInputStream(),excelListener).sheet().doRead();
 
     }
 

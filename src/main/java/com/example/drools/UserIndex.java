@@ -2,10 +2,6 @@ package com.example.drools;
 
 import lombok.Data;
 
-/**
- * @author deacon
- * @since 2019/9/25
- */
 @Data
 public class UserIndex {
     int uid;
