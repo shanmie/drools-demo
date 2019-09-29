@@ -2,8 +2,11 @@ package com.example.drools;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.models.auth.In;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -64,6 +67,18 @@ public class DemoDroolsApplicationTests {
         client.index(indexRequest,RequestOptions.DEFAULT);
     }
 
+    @Test
+    public void updateIndex() throws IOException {
+        Tag tag = new Tag();
+        tag.setUid(1);
+        tag.setCountry("印度");
+        IndexRequest indexRequest = new IndexRequest("test","tag");
+        ObjectMapper mapper = new ObjectMapper();
+        byte[] json = mapper.writeValueAsBytes(tag);
+        indexRequest.source(json, XContentType.JSON);
+        client.index(indexRequest,RequestOptions.DEFAULT);
+
+    }
 
 
     public String parseJson(){
