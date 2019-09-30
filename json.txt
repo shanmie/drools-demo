@@ -118,7 +118,7 @@
   ],
   "out_conditions": "AND"
 }
------------sql--- > select * from table where country = '日本'  and country = '韩国' and sex='男'----------
+-----------sql--- > select * from table where (country = '日本'  or country = '韩国') and sex='男'----------
 ------------------------- 查 2 级 只查询country 包含 日本  或  韩国 并且 性别 不是男-------------------
 {
   "tags": [
@@ -151,7 +151,7 @@
   ],
   "out_conditions": "AND"
 }
------------sql--- > select * from table where country = '日本'  and country = '韩国' and sex!='男'----------
+-----------sql--- > select * from table where (country = '日本'  or country = '韩国') and sex !='男'----------
 ------------------------- 查 2 级 只查询country 包含 日本  和  韩国 并且 性别 男-------------------
 {
   "tags": [
@@ -184,6 +184,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country = '日本'  and country = '韩国') and sex='男'----------
 ------------------------- 查 2 级 只查询country 包含 日本  和  韩国 并且 性别 不是男-------------------
 {
   "tags": [
@@ -216,6 +217,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country = '日本'  and country = '韩国') and sex !='男'----------
 ------------------------- 查 2 级 只查询country 不包含 日本  或  韩国 并且 性别 男-------------------
 {
   "tags": [
@@ -248,6 +250,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country != '日本'  or country != '韩国') and sex='男'----------
 ------------------------- 查 2 级 只查询country 不包含 日本  或  韩国 并且 性别 不是男-------------------
 {
   "tags": [
@@ -280,6 +283,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country != '日本'  or country != '韩国') and sex !='男'----------
 ------------------------- 查 2 级 只查询country 不包含 日本  和  韩国 并且 性别 男-------------------
 {
   "tags": [
@@ -312,6 +316,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country != '日本'  and country != '韩国') and sex='男'----------
 ------------------------- 查 2 级 只查询country 不包含 日本  和  韩国 并且 性别 不是男-------------------
 {
   "tags": [
@@ -344,6 +349,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country != '日本'  and country != '韩国') and sex !='男'----------
 ------------------------- 查 3 级 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 包含 北京 或 上海 或 香港-------------------
 {
   "tags": [
@@ -395,6 +401,7 @@
   ],
   "out_conditions": "AND"
 }
+-----------sql--- > select * from table where (country = '日本'  or country = '韩国') and sex='男' and (出发口岸=北京 or 出发口岸=上海 or 出发口岸=香港)----------
 ------------------------- 查 3 级 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 不包含 北京 或 上海 或 香港-------------------
 {
   "tags": [
