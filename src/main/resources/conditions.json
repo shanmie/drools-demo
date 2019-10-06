@@ -1,47 +1,17 @@
 {
   "tags": [
     {
-      "in_conditions": "OR",
-      "content": [
-        {
-          "conditions": "IN",
-          "name": "country",
-          "value": "日本"
-        },
-        {
-          "conditions": "IN",
-          "name": "country",
-          "value": "韩国"
-        }
-      ]
-    },
-    {
       "in_conditions": "AND",
       "content": [
         {
-          "conditions": "IN",
-          "name": "sex",
-          "value": "男"
-        }
-      ]
-    },
-    {
-      "in_conditions": "OR",
-      "content": [
-        {
-          "conditions": "IN",
-          "name": "出发口岸",
-          "value": "北京"
+          "conditions": "NOT",
+          "name":"country",
+          "value": "日本"
         },
         {
-          "conditions": "IN",
-          "name": "出发口岸",
-          "value": "上海"
-        },
-        {
-          "conditions": "IN",
-          "name": "出发口岸",
-          "value": "香港"
+          "conditions": "NOT",
+          "name":"country",
+          "value": "韩国"
         }
       ]
     }

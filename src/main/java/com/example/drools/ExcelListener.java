@@ -4,6 +4,7 @@ import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.metadata.CellData;
 import com.example.drools.es.EsOperate;
+import com.example.drools.mongo.MongoOp;
 import io.swagger.models.auth.In;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ import java.util.Map;
 public class ExcelListener extends AnalysisEventListener<Object> {
 
     private final EsOperate es;
+
+    @Autowired
+    private MongoOp mongoOp;
 
     /**
      * 每隔5条存储数据库，实际使用中可以3000条，然后清理list ，方便内存回收
@@ -59,7 +63,8 @@ public class ExcelListener extends AnalysisEventListener<Object> {
     public void doAfterAllAnalysed(AnalysisContext context) {
         saveData();
         log.info("所有数据解析完成！{}",countSize);
-        createEsIndex();
+        createMongoCollection();
+        //createEsIndex();
     }
 
     /**
@@ -98,12 +103,17 @@ public class ExcelListener extends AnalysisEventListener<Object> {
            mapList.add(map);
         }
 
+    }
 
-
+    private void createMongoCollection(){
+        log.info("mongo create collection in...");
+        mongoOp.createCollection("test",mapList);
     }
 
     private void createEsIndex()  {
         log.info("create es index:{},total:{}",mapList,countSize);
         es.createIndex("test","tag",mapList);
     }
+
+
 }

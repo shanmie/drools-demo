@@ -6,15 +6,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.auth.In;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.http.HttpHost;
 import org.apache.poi.ss.formula.functions.T;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +33,7 @@ import java.util.Map;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class DemoDroolsApplicationTests {
+public class DemoEsApplicationTests {
 
 
     @Autowired
@@ -177,19 +180,19 @@ public class DemoDroolsApplicationTests {
                 //第三层
                 if ("IN".equalsIgnoreCase(cond)){
                     if ("AND".equalsIgnoreCase(inConditions)) {
-                        boolQueryBuilder2.must(QueryBuilders.matchQuery(name, value));
+                        boolQueryBuilder2.must(QueryBuilders.matchPhrasePrefixQuery(name, value));
                     }
                     if ("OR".equalsIgnoreCase(inConditions)) {
-                        boolQueryBuilder2.should(QueryBuilders.matchQuery(name, value));
+                        boolQueryBuilder2.should(QueryBuilders.matchPhrasePrefixQuery(name, value));
                     }
                 }
                 if ("NOT".equalsIgnoreCase(cond)){
                     if ("AND".equalsIgnoreCase(inConditions)) {
                         System.out.println("name:"+name+":value:"+value);
-                        boolQueryBuilder2.mustNot(QueryBuilders.termQuery(name,value));
+                        boolQueryBuilder2.mustNot(QueryBuilders.matchPhrasePrefixQuery(name,value));
                     }
                     if ("OR".equalsIgnoreCase(inConditions)) {
-                        boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value) );
+                        boolQueryBuilder2.mustNot(QueryBuilders.matchPhrasePrefixQuery(name, value) );
                     }
 
 
@@ -209,6 +212,7 @@ public class DemoDroolsApplicationTests {
         searchRequest.source(searchSourceBuilder);
         searchRequest.types("tag");//设置类型
         searchSourceBuilder.size(1000);
+        System.out.println(searchSourceBuilder);
         try {
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
             int i = 1;
@@ -219,6 +223,73 @@ public class DemoDroolsApplicationTests {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 只查询country 包含 日本  和  韩国
+     */
+    @Test
+    public void test(){
+        try {
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.from(0);
+
+            //     MatchQueryBuilder sex = QueryBuilders.matchQuery("sex", "未知");
+
+            MatchQueryBuilder country = QueryBuilders.matchQuery("country", "日本");
+            MatchQueryBuilder country2 = QueryBuilders.matchQuery("country", "韩国");
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(country).must(country2);
+            sourceBuilder.query(boolQuery);
+            sourceBuilder.size(50);
+            SearchRequest searchRequest = new SearchRequest("test");
+            searchRequest.source(sourceBuilder);
+            System.out.println(sourceBuilder);
+            //聚合条件
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            for (SearchHit hit : hits) {
+                //System.out.println(hit.getSourceAsString());
+                System.out.println("------++-->第 "+hit.getSourceAsMap());
+            }
+
+            client.close();
+        } catch (Exception e) {
+            e.getStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /**
+     * 只查询country 包含 日本  或  韩国
+     */
+    @Test
+    public void test3(){
+        try {
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.from(0);
+            MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("country", "日本");
+            PrefixQueryBuilder prefixQueryBuilder = QueryBuilders.prefixQuery("country", "韩国");
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().should(matchPhrasePrefixQueryBuilder).should(prefixQueryBuilder);
+            sourceBuilder.query(boolQuery);
+            sourceBuilder.size(50);
+            SearchRequest searchRequest = new SearchRequest("test");
+            searchRequest.source(sourceBuilder);
+
+            System.out.println(sourceBuilder);
+            //聚合条件
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            SearchHits hits = response.getHits();
+            for (SearchHit hit : hits) {
+                System.out.println(hit.getSourceAsString());
+            }
+
+            client.close();
+        } catch (Exception e) {
+            e.getStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
 
 
 
