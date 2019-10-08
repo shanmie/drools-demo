@@ -64,15 +64,10 @@ public class DemoMongoApplicationTests {
         String outConditions = j.getString("out_conditions");
 
         Query query = new Query();
-
         Criteria criteria = new Criteria();
-        Criteria andCri = new Criteria();
-        Criteria orCri = new Criteria();
-
-        List<Criteria> andCriList = new ArrayList<>();
-        List<Criteria> orCriList = new ArrayList<>();
 
         List<String> not = new ArrayList<>();
+        List<Criteria> inCriList = new ArrayList<>();
 
         for (Object obj: tags) {
             Map map = (Map) obj;
@@ -80,6 +75,8 @@ public class DemoMongoApplicationTests {
             Object content = MapUtils.getObject(map, "content");
             List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
 
+            List<Criteria> andCriList = new ArrayList<>();
+            List<Criteria> orCriList = new ArrayList<>();
 
             for (Map coMap : maps) {
                 String name = MapUtils.getString(coMap, "name");
@@ -107,22 +104,25 @@ public class DemoMongoApplicationTests {
                     }
                 }
             }
-
+            Criteria andCri = new Criteria();
+            Criteria orCri = new Criteria();
             if ("AND".equalsIgnoreCase(inConditions)) {
-                andCri.andOperator(andCriList.toArray(new Criteria[andCriList.size()]));
+                andCri.andOperator(andCriList.stream().toArray(Criteria[]::new));
+                inCriList.add(andCri);
             }
             if ("OR".equalsIgnoreCase(inConditions)) {
                 orCri.orOperator(orCriList.toArray(new Criteria[orCriList.size()]));
+                inCriList.add(orCri);
             }
-
-
         }
 
         if ("AND".equalsIgnoreCase(outConditions)) {
-            criteria.andOperator(andCri,orCri);
+            System.out.println(criteria.toString());
+
+            criteria.andOperator(inCriList.toArray(new Criteria[inCriList.size()]));
         }
         if ("OR".equalsIgnoreCase(outConditions)) {
-            criteria.orOperator(andCri,orCri);
+            criteria.orOperator(inCriList.toArray(new Criteria[inCriList.size()]));
         }
         query.addCriteria(criteria);
         System.out.println(query);
