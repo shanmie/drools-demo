@@ -98,7 +98,15 @@ public class ExcelListener extends AnalysisEventListener<Object> {
                        val = "非亲子";
                    }
                }
+
+               if (v.equalsIgnoreCase("country")){
+                   String s = val.toString();
+                   val = s.split(",");
+               }
+
                map.put(v, val);
+
+
            });
            mapList.add(map);
         }
