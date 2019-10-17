@@ -4,6 +4,7 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.fastjson.JSONObject;
 import com.sun.tools.internal.ws.wsdl.document.soap.SOAPUse;
 import org.apache.commons.collections4.MapUtils;
+import org.assertj.core.util.Strings;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.common.recycler.Recycler;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -88,6 +89,7 @@ public class DemoMongoApplicationTests {
                 if ("IN".equalsIgnoreCase(cond)){
                     if ("AND".equalsIgnoreCase(inConditions)) {
                         andCriList.add(Criteria.where(name).regex(".*" + value + ".*"));
+
                     }
                     if ("OR".equalsIgnoreCase(inConditions)) {
                         orCriList.add(Criteria.where(name).regex(".*" + value + ".*"));
@@ -96,7 +98,8 @@ public class DemoMongoApplicationTests {
                 if ("NOT".equalsIgnoreCase(cond)){
                     if ("AND".equalsIgnoreCase(inConditions)) {
                         not.add(value);
-                        andCriList.add(Criteria.where(name).nin(not));
+                        System.out.println(not);
+                        andCriList.add(Criteria.where(name).not().all(not));
                     }
                     if ("OR".equalsIgnoreCase(inConditions)) {
                         not.add(value);

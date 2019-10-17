@@ -139,7 +139,7 @@
     },
 
     {
-      "in_conditions": "OR",
+      "in_conditions": "AND",
       "content": [
         {
           "conditions": "NOT",
