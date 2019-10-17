@@ -11,6 +11,8 @@ import org.apache.poi.ss.formula.functions.T;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -28,6 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import sun.misc.IOUtils;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -290,6 +293,24 @@ public class DemoEsApplicationTests {
         }
     }
 
+    @Test
+    public void update() throws JsonProcessingException {
+        Map<String, Object> parameters = new HashMap<>();
+        //UpdateRequest updateRequest = new UpdateRequest("test", "tag", "r5jce20BSr006MxniA62");
+        //parameters.put("country", "印度");
+        UpdateRequest updateRequest = new UpdateRequest("test", "tag", "spjce20BSr006MxniA7A");
+        parameters.put("country", "印度尼西亚");
+        ObjectMapper mapper = new ObjectMapper();
+        byte[] json = mapper.writeValueAsBytes(parameters);
+        updateRequest.doc(json, XContentType.JSON);
+
+        try {
+            UpdateResponse updateResponse = client.update(updateRequest,RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
 
 
