@@ -1,21 +1,38 @@
 package com.example.drools;
 
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.EasyExcelFactory;
+import com.alibaba.excel.ExcelReader;
+import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.metadata.style.WriteFont;
+import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.models.auth.In;
+import lombok.ToString;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.poi.ss.formula.functions.T;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.reindex.*;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -28,8 +45,18 @@ import org.springframework.test.context.junit4.SpringRunner;
 import sun.misc.IOUtils;
 
 import java.io.*;
-import java.util.List;
-import java.util.Map;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -51,7 +78,32 @@ public class DemoEsApplicationTests {
         ClassPathResource resource = new ClassPathResource("blood.xlsx");
         EasyExcel.read(resource.getInputStream(),excelListener).sheet().doRead();
 
+       /* ExcelReader reader = EasyExcelFactory.read(resource.getInputStream(),excelListener).build();
+        reader.read();
+        reader.finish();*/
     }
+
+
+    @Test
+    public void testExport(){
+        String fileName = "/Users/admin/Downloads/1.xlsx";
+        List<String> strings = new ArrayList<>();
+        strings.add("name");
+        strings.add("sex");
+        List<String> strings2 = new ArrayList<>();
+        strings2.add("sex");
+
+        WriteCellStyle headWriteCellStyle = new WriteCellStyle();
+        WriteCellStyle contentWriteCellStyle = new WriteCellStyle();
+        WriteFont contentWriteFont = new WriteFont();
+        // 字体大小
+        contentWriteFont.setFontHeightInPoints((short)12);
+        contentWriteCellStyle.setWriteFont(contentWriteFont);
+        HorizontalCellStyleStrategy horizontalCellStyleStrategy =
+                new HorizontalCellStyleStrategy(headWriteCellStyle,contentWriteCellStyle);
+        EasyExcel.write(fileName).sheet("模板").registerWriteHandler(horizontalCellStyleStrategy).doWrite(Arrays.asList(strings));
+    }
+
 
     @Test
     public void createIndex() throws IOException {
@@ -67,20 +119,101 @@ public class DemoEsApplicationTests {
         ObjectMapper mapper = new ObjectMapper();
         byte[] json = mapper.writeValueAsBytes(tag);
         indexRequest.source(json, XContentType.JSON);
-        client.index(indexRequest,RequestOptions.DEFAULT);
+        IndexResponse index = client.index(indexRequest, RequestOptions.DEFAULT);
+        System.out.println(index);
+    }
+
+    @Test
+    public void updateIndexBulk() throws IOException {
+        UpdateByQueryRequest request = new UpdateByQueryRequest("test");
+
+        // 更新时版本冲突
+        request.setConflicts("proceed");
+        request.setQuery(QueryBuilders.matchQuery ("sex", "男士"));
+        // 更新最大文档数
+        //request.setSize(10);
+        // 批次大小
+        request.setBatchSize(1000);
+        //		request.setPipeline("my_pipeline");
+
+        request.setScript(new Script(ScriptType.INLINE, "painless",
+                String.format( "ctx._source.sex = '男'"), Collections.emptyMap()));
+        // 并行
+        request.setSlices(2);
+        // 使用滚动参数来控制“搜索上下文”存活的时间
+        request.setScroll(TimeValue.timeValueMinutes(10));
+        // 如果提供路由，则将路由复制到滚动查询，将流程限制为匹配该路由值的切分
+        //		request.setRouting("=cat");
+
+        // 可选参数
+        // 超时
+        request.setTimeout(TimeValue.timeValueMinutes(2));
+        // 刷新索引
+        request.setRefresh(true);
+
+
+        BulkByScrollResponse bulkResponse = client.updateByQuery(request, RequestOptions.DEFAULT);
+        TimeValue timeTaken = bulkResponse.getTook();
+        boolean timedOut = bulkResponse.isTimedOut();
+        long totalDocs = bulkResponse.getTotal();
+        long updatedDocs = bulkResponse.getUpdated();
+        long deletedDocs = bulkResponse.getDeleted();
+        long batches = bulkResponse.getBatches();
+        long noops = bulkResponse.getNoops();
+        long versionConflicts = bulkResponse.getVersionConflicts();
+        System.out.println("花费时间：" + timeTaken + ",是否超时：" + timedOut + ",总文档数：" + totalDocs + ",更新数：" +
+                updatedDocs + ",删除数：" + deletedDocs + ",批量次数：" + batches + ",跳过数：" + noops + ",冲突数：" + versionConflicts);
+        List<ScrollableHitSource.SearchFailure> searchFailures = bulkResponse.getSearchFailures();  // 搜索期间的故障
+        searchFailures.forEach(e -> {
+            System.err.println("Cause:" + e.getReason().getMessage() + "Index:" + e.getIndex() + ",NodeId:" + e.getNodeId() + ",ShardId:" + e.getShardId());
+        });
+        List<BulkItemResponse.Failure> bulkFailures = bulkResponse.getBulkFailures();   // 批量索引期间的故障
+        bulkFailures.forEach(e -> {
+            System.err.println("Cause:" + e.getCause().getMessage() + "Index:" + e.getIndex() + ",Type:" + e.getType() + ",Id:" + e.getId());
+        });
+
+
     }
 
     @Test
     public void updateIndex() throws IOException {
-        Tag tag = new Tag();
-        tag.setUid(1);
-        tag.setCountry("印度");
-        IndexRequest indexRequest = new IndexRequest("test","tag");
-        ObjectMapper mapper = new ObjectMapper();
-        byte[] json = mapper.writeValueAsBytes(tag);
-        indexRequest.source(json, XContentType.JSON);
-        client.index(indexRequest,RequestOptions.DEFAULT);
 
+        TermQueryBuilder queryBuilder = QueryBuilders.termQuery("sex", "男士");
+
+        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(queryBuilder);//设置查询条件
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.types("tag");//设置类型
+        searchSourceBuilder.size(1000);
+        System.out.println(searchSourceBuilder);
+        Map<String,Object> sourceAsMap = new HashMap<>() ;
+        try {
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            int i = 1;
+            for (SearchHit hit : response.getHits().getHits()) {
+                System.out.println("------++---------->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+                sourceAsMap = hit.getSourceAsMap();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(sourceAsMap);
+
+        /*sourceAsMap.put("location","印度");
+        ObjectMapper mapper = new ObjectMapper();
+        byte[] json = mapper.writeValueAsBytes(sourceAsMap);
+        UpdateRequest updateRequest = new UpdateRequest("test", "tag", "569728")
+                .fetchSource(true);
+        updateRequest.doc(json,XContentType.JSON);
+        client.update(updateRequest,RequestOptions.DEFAULT);*/
+    }
+
+    @Test
+    public void del() throws IOException {
+        DeleteRequest deleteRequest = new DeleteRequest("test", "tag","569796");
+        client.delete(deleteRequest,RequestOptions.DEFAULT);
     }
 
 
@@ -94,70 +227,8 @@ public class DemoEsApplicationTests {
        return null;
    }
 
-
-
     @Test
-    public void test1(){
-        JSONObject j = JSONObject.parseObject(parseJson());
-        List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
-        String outConditions = j.getString("out_conditions");
-
-        SearchRequest searchRequest = new SearchRequest("test");//设置查询索引
-        BoolQueryBuilder boolQueryBuilder0 = QueryBuilders.boolQuery();
-        BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
-        for (Object obj: tags) {
-            Map map = (Map) obj;
-            String inConditions = MapUtils.getString(map, "in_conditions");
-            System.out.println(inConditions);
-            Object content = MapUtils.getObject(map, "content");
-            List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
-            BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
-            for (Map coMap:maps) {
-                String name = MapUtils.getString(coMap, "name");
-                String cond = MapUtils.getString(coMap, "conditions");
-                String value = MapUtils.getString(coMap, "value");
-                System.out.println("name:"+name+":cond:"+cond+":value:"+value);
-                //第三层
-                if ("IN".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.must(QueryBuilders.matchQuery(name, value).operator(Operator.AND));
-                }
-                if ("NOT".equalsIgnoreCase(cond)){
-                    boolQueryBuilder2.mustNot(QueryBuilders.matchQuery(name, value).operator(Operator.OR));
-                }
-
-            }
-            if ("AND".equalsIgnoreCase(inConditions)) {
-                boolQueryBuilder1.must(boolQueryBuilder2);
-            }
-            if ("OR".equalsIgnoreCase(inConditions)) {
-                boolQueryBuilder1.should(boolQueryBuilder2);
-            }
-
-        }
-        if ("AND".equalsIgnoreCase(outConditions)) {
-            boolQueryBuilder0.must(boolQueryBuilder1);
-        }
-        if ("OR".equalsIgnoreCase(outConditions)) {
-            boolQueryBuilder0.should(boolQueryBuilder1);
-        }
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(boolQueryBuilder0);//设置查询条件
-        searchRequest.source(searchSourceBuilder);
-        searchRequest.types("tag");//设置类型
-        searchSourceBuilder.size(1000);
-        try {
-            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            int i =1;
-            for (SearchHit hit : response.getHits().getHits()) {
-                System.out.println("-----+--->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void test2() {
+    public void test1() {
 
         JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
@@ -224,6 +295,79 @@ public class DemoEsApplicationTests {
         }
     }
 
+
+    @Test
+    public void test2() {
+
+        JSONObject j = JSONObject.parseObject(parseJson());
+        List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
+        String outConditions = j.getString("out_conditions");
+
+        SearchRequest searchRequest = new SearchRequest("15");//设置查询索引
+        BoolQueryBuilder boolQueryBuilder0 = QueryBuilders.boolQuery();
+        BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
+
+        for (Object obj: tags) {
+            Map map = (Map) obj;
+            String inConditions = MapUtils.getString(map, "in_conditions");
+            Object content = MapUtils.getObject(map, "content");
+            List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
+            BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
+            String cond2 = null;
+            for (Map coMap:maps) {
+                String name = MapUtils.getString(coMap, "name");
+                String cond = MapUtils.getString(coMap, "conditions");
+                String value = MapUtils.getString(coMap, "value");
+                //第三层
+
+                if ("AND".equalsIgnoreCase(inConditions)) {
+                    boolQueryBuilder2.must(QueryBuilders.matchPhrasePrefixQuery(name+".keyword", value));
+                    System.out.println();
+                }
+                if ("OR".equalsIgnoreCase(inConditions)) {
+                    boolQueryBuilder2.should(QueryBuilders.matchPhrasePrefixQuery(name+".keyword", value));
+                }
+
+
+                if ("NOT".equalsIgnoreCase(cond)){
+                    cond2 = cond;
+
+                }
+
+
+            }
+
+            if ("AND".equalsIgnoreCase(outConditions)) {
+                if ("NOT".equalsIgnoreCase(cond2)){
+                    boolQueryBuilder1.mustNot(boolQueryBuilder2);
+                }else{
+                    boolQueryBuilder1.must(boolQueryBuilder2);
+                }
+            }
+            if ("OR".equalsIgnoreCase(outConditions)) {
+                boolQueryBuilder1.should(boolQueryBuilder2);
+            }
+
+        }
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(boolQueryBuilder1);//设置查询条件
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.types("tag");//设置类型
+        searchSourceBuilder.size(1000);
+        System.out.println(searchSourceBuilder);
+        try {
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            int i = 1;
+            for (SearchHit hit : response.getHits().getHits()) {
+                System.out.println("------++------>第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     /**
      * 只查询country 包含 日本  和  韩国
      */
@@ -234,10 +378,10 @@ public class DemoEsApplicationTests {
             sourceBuilder.from(0);
 
             //     MatchQueryBuilder sex = QueryBuilders.matchQuery("sex", "未知");
-
-            MatchQueryBuilder country = QueryBuilders.matchQuery("country", "日本");
-            MatchQueryBuilder country2 = QueryBuilders.matchQuery("country", "韩国");
-            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(country).must(country2);
+            MatchQueryBuilder country = QueryBuilders.matchQuery("country.keyword", "印度");
+           // MatchQueryBuilder country2 = QueryBuilders.matchQuery("country.keyword", "韩国");
+            //TermQueryBuilder country2 = QueryBuilders.termQuery("sex.keyword", "男");
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(country);
             sourceBuilder.query(boolQuery);
             sourceBuilder.size(50);
             SearchRequest searchRequest = new SearchRequest("test");
@@ -290,7 +434,143 @@ public class DemoEsApplicationTests {
         }
     }
 
+    /**
+     * 只查询country 不包含 日本 和 韩国
+     */
+    @Test
+    public void test4(){
 
+        try {
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.from(0);
+
+            MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("country", "日本");
+            PrefixQueryBuilder prefixQueryBuilder = QueryBuilders.prefixQuery("country", "韩国");
+            BoolQueryBuilder notAnd = QueryBuilders.boolQuery().must(matchPhrasePrefixQueryBuilder).must(prefixQueryBuilder);
+
+
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().mustNot(notAnd);
+
+            sourceBuilder.query(boolQuery);
+            sourceBuilder.size(50);
+            SearchRequest searchRequest = new SearchRequest("test");
+            searchRequest.source(sourceBuilder);
+
+            System.out.println(sourceBuilder);
+            //聚合条件
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            SearchHits hits = response.getHits();
+            int i =1;
+            for (SearchHit hit : hits) {
+                System.out.println("------++-->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+            }
+
+            client.close();
+        } catch (Exception e) {
+            e.getStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /**
+     * 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 不包含 北京 和 上海 和 香港
+     */
+    @Test
+    public void test5() {
+
+        try {
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.from(0);
+
+            MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("country", "日本");
+            PrefixQueryBuilder prefixQueryBuilder = QueryBuilders.prefixQuery("country", "韩国");
+
+            BoolQueryBuilder bool = QueryBuilders.boolQuery().should(matchPhrasePrefixQueryBuilder).should(prefixQueryBuilder);
+
+            TermQueryBuilder sex = QueryBuilders.termQuery("sex", "男");
+            List<String> list = new ArrayList<>();
+            list.add("香港");
+            list.add("北京市");
+            list.add("上海市");
+            TermsQueryBuilder start = QueryBuilders.termsQuery("startOfPort", list);
+
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(bool).must(sex).mustNot(start);
+
+            sourceBuilder.query(boolQuery);
+            sourceBuilder.size(50);
+            SearchRequest searchRequest = new SearchRequest("test");
+            searchRequest.source(sourceBuilder);
+
+            System.out.println(sourceBuilder);
+            //聚合条件
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            int i =1;
+            for (SearchHit hit : hits) {
+                System.out.println("------++-->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+            }
+            client.close();
+        } catch (Exception e) {
+            e.getStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
+    @Test
+    public void test100(){
+        String str = "\"2018/09/09\"";
+
+        //String path = "\".*\"";
+
+
+        String path = "\"\\d{4}[/]\\d{2}[/]\\d{2}\"";
+
+          //String path = "\\d{4}[/]\\d{2}[/]\\d{2}(\\s\\d{2}:\\d{2}:\\d{2})";//定义匹配规则
+       // String path = "\\d{4}[/]\\d{1,2}[/]\\d{1,2}(\\s\\d{2}:\\d{2}(:\\d{2})?)?";
+        Pattern p= Pattern.compile(path);//实例化Pattern
+        Matcher m=p.matcher(str);//验证字符串内容是否合法
+        System.out.println(m.matches());
+
+        String s = "NUll";
+        String[] split = s.split(",");
+        if (split.length >1){
+            System.out.println("多个值");
+        }
+        System.out.println(split[0].toLowerCase());
+        if(StringUtils.isBlank(split[0]) || "null".equalsIgnoreCase(split[0].toLowerCase())) System.out.println("没有啊");
+    }
+
+
+    @Test
+    public void test102() throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+        buffer.put("我爱你我的中国  ".getBytes());
+        buffer.put("\n".getBytes());
+        buffer.put("我和我的祖国".getBytes());
+        System.out.println("刚写完数据 " +buffer);
+        //buffer.flip();
+        System.out.println("flip之后 " +buffer);
+        buffer.flip();
+        byte[] target = new byte[buffer.limit()];
+        /*buffer.get(target);//自动读取target.length个数据
+        for(byte b : target){
+            System.out.println(b);
+        }*/
+        System.out.println("读取完数组 " +buffer);
+        buffer.get(target);
+        Files.write(Paths.get("/Users/admin/Downloads/11.txt"),target);
+        buffer.clear();
+    }
+
+    @Test
+    public void test103(){
+        String val = "1999-09-09 00:00:00";
+        LocalDate parse =  LocalDateTime.parse(val,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toLocalDate();
+        System.out.println(parse);
+
+
+    }
 
 
 }

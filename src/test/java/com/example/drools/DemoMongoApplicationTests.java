@@ -59,6 +59,11 @@ public class DemoMongoApplicationTests {
 
     @Test
     public void test(){
+        String s = parseJson();
+        String s1 = JSONObject.toJSONString(s);
+        System.out.println(s);
+        System.out.println(s1);
+
         JSONObject j = JSONObject.parseObject(parseJson());
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
         String outConditions = j.getString("out_conditions");
@@ -85,11 +90,11 @@ public class DemoMongoApplicationTests {
 
                 if ("IN".equalsIgnoreCase(cond)){
                     if ("AND".equalsIgnoreCase(inConditions)) {
-                        andCriList.add(Criteria.where(name).regex(".*" + value + ".*"));
+                        andCriList.add(Criteria.where(name).is(value));
 
                     }
                     if ("OR".equalsIgnoreCase(inConditions)) {
-                        orCriList.add(Criteria.where(name).regex(".*" + value + ".*"));
+                        orCriList.add(Criteria.where(name).is(value));
                     }
                 }
                 if ("NOT".equalsIgnoreCase(cond)){
