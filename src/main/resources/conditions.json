@@ -1,14 +1,68 @@
 {
   "tags": [
     {
-      "in_conditions": "AND",
       "content": [
         {
+          "id": 10219,
+          "sid": 14000,
+          "subName": null,
+          "property": 1,
+          "conditions": "NIN",
+          "name": "成单周期",
+          "value": "2"
+        },
+        {
+          "id": 10219,
+          "sid": 14001,
+          "subName": null,
+          "property": 1,
+          "conditions": "NIN",
+          "name": "成单周期",
+          "value": "3"
+        },
+        {
+          "id": 10219,
+          "sid": 14002,
+          "subName": null,
+          "property": 1,
+          "conditions": "NIN",
+          "name": "成单周期",
+          "value": "4"
+        },
+        {
+          "id": 10216,
+          "sid": 13988,
+          "subName": null,
+          "property": 1,
           "conditions": "IN",
-          "name":"country",
-          "value": "日本"
+          "name": "欧洲发达国家",
+          "value": "德国"
         }
-      ]
+      ],
+      "in_conditions": "AND"
+    },
+    {
+      "content": [
+        {
+          "id": 10215,
+          "sid": 13985,
+          "subName": null,
+          "property": 1,
+          "conditions": "IN",
+          "name": "性别",
+          "value": "女"
+        },
+        {
+          "id": 10220,
+          "sid": 14003,
+          "subName": null,
+          "property": 1,
+          "conditions": "NIN",
+          "name": "年龄",
+          "value": "2-19"
+        }
+      ],
+      "in_conditions": "OR"
     }
   ],
   "out_conditions": "AND"

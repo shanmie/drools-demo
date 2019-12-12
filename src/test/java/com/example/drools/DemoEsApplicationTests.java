@@ -58,6 +58,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.elasticsearch.client.RequestOptions.DEFAULT;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class DemoEsApplicationTests {
@@ -303,8 +305,7 @@ public class DemoEsApplicationTests {
         List<Map> tags = j.getJSONArray("tags").toJavaList(Map.class);
         String outConditions = j.getString("out_conditions");
 
-        SearchRequest searchRequest = new SearchRequest("15");//设置查询索引
-        BoolQueryBuilder boolQueryBuilder0 = QueryBuilders.boolQuery();
+        SearchRequest searchRequest = new SearchRequest("30");//设置查询索引
         BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
 
         for (Object obj: tags) {
@@ -312,40 +313,44 @@ public class DemoEsApplicationTests {
             String inConditions = MapUtils.getString(map, "in_conditions");
             Object content = MapUtils.getObject(map, "content");
             List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
+
             BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
-            String cond2 = null;
+            BoolQueryBuilder boolQueryBuilderNot = QueryBuilders.boolQuery();
+
+
             for (Map coMap:maps) {
                 String name = MapUtils.getString(coMap, "name");
                 String cond = MapUtils.getString(coMap, "conditions");
                 String value = MapUtils.getString(coMap, "value");
+
+
+
                 //第三层
+                if ("NOT".equalsIgnoreCase(cond) || "NIN".equalsIgnoreCase(cond)) {
 
-                if ("AND".equalsIgnoreCase(inConditions)) {
-                    boolQueryBuilder2.must(QueryBuilders.matchPhrasePrefixQuery(name+".keyword", value));
-                    System.out.println();
-                }
-                if ("OR".equalsIgnoreCase(inConditions)) {
-                    boolQueryBuilder2.should(QueryBuilders.matchPhrasePrefixQuery(name+".keyword", value));
-                }
-
-
-                if ("NOT".equalsIgnoreCase(cond)){
-                    cond2 = cond;
-
+                    if ("AND".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilderNot.should(QueryBuilders.matchPhrasePrefixQuery(name + ".keyword", value));
+                    }
+                    if ("OR".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilderNot.must(QueryBuilders.matchPhrasePrefixQuery(name + ".keyword", value));
+                    }
+                }else {
+                    if ("AND".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilder2.must(QueryBuilders.matchPhrasePrefixQuery(name + ".keyword", value));
+                    }
+                    if ("OR".equalsIgnoreCase(inConditions)) {
+                        boolQueryBuilder2.should(QueryBuilders.matchPhrasePrefixQuery(name + ".keyword", value));
+                    }
                 }
 
 
             }
 
-            if ("AND".equalsIgnoreCase(outConditions)) {
-                if ("NOT".equalsIgnoreCase(cond2)){
-                    boolQueryBuilder1.mustNot(boolQueryBuilder2);
-                }else{
-                    boolQueryBuilder1.must(boolQueryBuilder2);
-                }
+            if (boolQueryBuilderNot.hasClauses()){
+                boolQueryBuilder1.mustNot(boolQueryBuilderNot);
             }
-            if ("OR".equalsIgnoreCase(outConditions)) {
-                boolQueryBuilder1.should(boolQueryBuilder2);
+            if (boolQueryBuilder2.hasClauses()) {
+                boolQueryBuilder1.must(boolQueryBuilder2);
             }
 
         }
@@ -355,7 +360,7 @@ public class DemoEsApplicationTests {
         searchRequest.source(searchSourceBuilder);
         searchRequest.types("tag");//设置类型
         searchSourceBuilder.size(1000);
-        System.out.println(searchSourceBuilder);
+        System.out.println("-------"+searchSourceBuilder);
         try {
             SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
             int i = 1;
@@ -366,6 +371,89 @@ public class DemoEsApplicationTests {
             e.printStackTrace();
         }
     }
+
+    @Test
+    public void test16() throws IOException {
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.from(0);
+
+        MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("欧洲发达国家.keyword", "德国");
+        BoolQueryBuilder bool = QueryBuilders.boolQuery().must(matchPhrasePrefixQueryBuilder);
+        List<String> list = new ArrayList<>();
+        list.add("2");
+        list.add("3");
+        list.add("4");
+        TermsQueryBuilder start = QueryBuilders.termsQuery("成单周期.keyword", list);
+
+        MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder2 = QueryBuilders.matchPhrasePrefixQuery("性别.keyword", "女");
+        BoolQueryBuilder bool2 = QueryBuilders.boolQuery().should(matchPhrasePrefixQueryBuilder2);
+
+        List<String> list2 = new ArrayList<>();
+        list2.add("2-19");
+        TermsQueryBuilder start2 = QueryBuilders.termsQuery("年龄.keyword", list2);
+
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(bool).should(bool2).mustNot(start).mustNot(start2);
+        sourceBuilder.query(boolQuery);
+        sourceBuilder.size(50);
+        SearchRequest searchRequest = new SearchRequest("30");
+        searchRequest.source(sourceBuilder);
+
+        System.out.println(sourceBuilder);
+        //聚合条件
+        SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+        SearchHits hits = response.getHits();
+        int i =1;
+        for (SearchHit hit : hits) {
+            System.out.println("------++-->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+        }
+        client.close();
+    }
+
+
+    /**
+     * 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 不包含 北京 和 上海 和 香港
+     */
+    @Test
+    public void test5() {
+
+        try {
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.from(0);
+
+            MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("country", "日本");
+            PrefixQueryBuilder prefixQueryBuilder = QueryBuilders.prefixQuery("country", "韩国");
+
+            BoolQueryBuilder bool = QueryBuilders.boolQuery().should(matchPhrasePrefixQueryBuilder).should(prefixQueryBuilder);
+
+            TermQueryBuilder sex = QueryBuilders.termQuery("sex", "男");
+            List<String> list = new ArrayList<>();
+            list.add("香港");
+            list.add("北京市");
+            list.add("上海市");
+            TermsQueryBuilder start = QueryBuilders.termsQuery("startOfPort", list);
+
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(bool).must(sex).mustNot(start);
+
+            sourceBuilder.query(boolQuery);
+            sourceBuilder.size(50);
+            SearchRequest searchRequest = new SearchRequest("test");
+            searchRequest.source(sourceBuilder);
+
+            System.out.println(sourceBuilder);
+            //聚合条件
+            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+            SearchHits hits = response.getHits();
+            int i =1;
+            for (SearchHit hit : hits) {
+                System.out.println("------++-->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
+            }
+            client.close();
+        } catch (Exception e) {
+            e.getStackTrace();
+            System.out.println(e.getMessage());
+        }
+    }
+
 
 
     /**
@@ -473,49 +561,7 @@ public class DemoEsApplicationTests {
         }
     }
 
-    /**
-     * 只查询country 包含 日本  或  韩国 并且 性别 男 并且 出发口岸 不包含 北京 和 上海 和 香港
-     */
-    @Test
-    public void test5() {
 
-        try {
-            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-            sourceBuilder.from(0);
-
-            MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("country", "日本");
-            PrefixQueryBuilder prefixQueryBuilder = QueryBuilders.prefixQuery("country", "韩国");
-
-            BoolQueryBuilder bool = QueryBuilders.boolQuery().should(matchPhrasePrefixQueryBuilder).should(prefixQueryBuilder);
-
-            TermQueryBuilder sex = QueryBuilders.termQuery("sex", "男");
-            List<String> list = new ArrayList<>();
-            list.add("香港");
-            list.add("北京市");
-            list.add("上海市");
-            TermsQueryBuilder start = QueryBuilders.termsQuery("startOfPort", list);
-
-            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery().must(bool).must(sex).mustNot(start);
-
-            sourceBuilder.query(boolQuery);
-            sourceBuilder.size(50);
-            SearchRequest searchRequest = new SearchRequest("test");
-            searchRequest.source(sourceBuilder);
-
-            System.out.println(sourceBuilder);
-            //聚合条件
-            SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
-            SearchHits hits = response.getHits();
-            int i =1;
-            for (SearchHit hit : hits) {
-                System.out.println("------++-->第 "+ (i ++) +" 条 "+hit.getSourceAsMap());
-            }
-            client.close();
-        } catch (Exception e) {
-            e.getStackTrace();
-            System.out.println(e.getMessage());
-        }
-    }
 
     @Test
     public void test100(){
@@ -563,14 +609,6 @@ public class DemoEsApplicationTests {
         buffer.clear();
     }
 
-    @Test
-    public void test103(){
-        String val = "1999-09-09 00:00:00";
-        LocalDate parse =  LocalDateTime.parse(val,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toLocalDate();
-        System.out.println(parse);
-
-
-    }
 
 
 }
