@@ -12,6 +12,8 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
@@ -37,6 +39,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -559,20 +564,23 @@ public class DemoEsApplicationTests {
         buffer.put("我爱你我的中国  ".getBytes());
         buffer.put("\n".getBytes());
         buffer.put("我和我的祖国".getBytes());
-        System.out.println("刚写完数据 " +buffer);
+        System.out.println("刚写完数据 " + buffer);
         //buffer.flip();
-        System.out.println("flip之后 " +buffer);
+        System.out.println("flip之后 " + buffer);
         buffer.flip();
         byte[] target = new byte[buffer.limit()];
         /*buffer.get(target);//自动读取target.length个数据
         for(byte b : target){
             System.out.println(b);
         }*/
-        System.out.println("读取完数组 " +buffer);
+        System.out.println("读取完数组 " + buffer);
         buffer.get(target);
-        Files.write(Paths.get("/Users/admin/Downloads/11.txt"),target);
+        Files.write(Paths.get("/Users/admin/Downloads/11.txt"), target);
         buffer.clear();
     }
+
+
+
 
 
 
