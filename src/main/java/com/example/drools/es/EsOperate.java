@@ -1,6 +1,5 @@
 package com.example.drools.es;
 
-import com.example.drools.UserIndex;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;

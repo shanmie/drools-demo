@@ -2,13 +2,8 @@ package com.example.drools;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.fastjson.JSONObject;
-import com.sun.tools.internal.ws.wsdl.document.soap.SOAPUse;
+import com.example.drools.excel.ExcelListener;
 import org.apache.commons.collections4.MapUtils;
-import org.assertj.core.util.Strings;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +17,6 @@ import sun.misc.IOUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

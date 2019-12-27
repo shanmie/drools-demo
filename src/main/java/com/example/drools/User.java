@@ -2,13 +2,11 @@ package com.example.drools;
 
 import lombok.Data;
 
-import java.util.List;
-import java.util.Map;
-
+/**
+ * @author deacon
+ * @since 2019/12/27
+ */
 @Data
 public class User {
     String name;
-    int age;
-    List<String> list;
-    Map<String,Object> map;
 }

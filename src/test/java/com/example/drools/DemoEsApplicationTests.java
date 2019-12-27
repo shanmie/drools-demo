@@ -1,34 +1,20 @@
 package com.example.drools;
 
 import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.EasyExcelFactory;
-import com.alibaba.excel.ExcelReader;
 import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.alibaba.excel.write.metadata.style.WriteFont;
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
 import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.models.auth.In;
-import lombok.ToString;
+import com.example.drools.excel.ExcelListener;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.poi.ss.formula.functions.T;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.reindex.*;
 import org.elasticsearch.script.Script;
@@ -47,18 +33,10 @@ import sun.misc.IOUtils;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.elasticsearch.client.RequestOptions.DEFAULT;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -107,23 +85,6 @@ public class DemoEsApplicationTests {
     }
 
 
-    @Test
-    public void createIndex() throws IOException {
-        Tag tag = new Tag();
-        tag.setUid(1);
-        tag.setCountry("印度,印度尼西亚");
-        tag.set出发口岸("陕西");
-        tag.setSex("男");
-        tag.set是否带孩子("非亲子");
-        tag.set决策周期(43);
-        tag.setLocation("南京");
-        IndexRequest indexRequest = new IndexRequest("test", "tag");
-        ObjectMapper mapper = new ObjectMapper();
-        byte[] json = mapper.writeValueAsBytes(tag);
-        indexRequest.source(json, XContentType.JSON);
-        IndexResponse index = client.index(indexRequest, RequestOptions.DEFAULT);
-        System.out.println(index);
-    }
 
     @Test
     public void updateIndexBulk() throws IOException {
@@ -306,7 +267,7 @@ public class DemoEsApplicationTests {
         String outConditions = j.getString("out_conditions");
 
         SearchRequest searchRequest = new SearchRequest("30");//设置查询索引
-        BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
         for (Object obj: tags) {
             Map map = (Map) obj;
@@ -314,17 +275,15 @@ public class DemoEsApplicationTests {
             Object content = MapUtils.getObject(map, "content");
             List<Map> maps = JSONObject.parseArray(content.toString(), Map.class);
 
-            BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
-            BoolQueryBuilder boolQueryBuilderNot = QueryBuilders.boolQuery();
+            BoolQueryBuilder boolQueryBuilder1 = QueryBuilders.boolQuery();
 
 
             for (Map coMap:maps) {
+                BoolQueryBuilder boolQueryBuilder2 = QueryBuilders.boolQuery();
+                BoolQueryBuilder boolQueryBuilderNot = QueryBuilders.boolQuery();
                 String name = MapUtils.getString(coMap, "name");
                 String cond = MapUtils.getString(coMap, "conditions");
                 String value = MapUtils.getString(coMap, "value");
-
-
-
                 //第三层
                 if ("NOT".equalsIgnoreCase(cond) || "NIN".equalsIgnoreCase(cond)) {
 
@@ -342,21 +301,25 @@ public class DemoEsApplicationTests {
                         boolQueryBuilder2.should(QueryBuilders.matchPhrasePrefixQuery(name + ".keyword", value));
                     }
                 }
-
-
+                if (boolQueryBuilderNot.hasClauses()){
+                    boolQueryBuilder1.mustNot(boolQueryBuilderNot);
+                }
+                if (boolQueryBuilder2.hasClauses()) {
+                    boolQueryBuilder1.must(boolQueryBuilder2);
+                }
             }
-
-            if (boolQueryBuilderNot.hasClauses()){
-                boolQueryBuilder1.mustNot(boolQueryBuilderNot);
+            if ("AND".equalsIgnoreCase(outConditions)) {
+                boolQueryBuilder.must(boolQueryBuilder1);
             }
-            if (boolQueryBuilder2.hasClauses()) {
-                boolQueryBuilder1.must(boolQueryBuilder2);
+            if ("OR".equalsIgnoreCase(outConditions)) {
+                boolQueryBuilder.mustNot(boolQueryBuilder1);
             }
-
         }
 
+
+
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(boolQueryBuilder1);//设置查询条件
+        searchSourceBuilder.query(boolQueryBuilder);//设置查询条件
         searchRequest.source(searchSourceBuilder);
         searchRequest.types("tag");//设置类型
         searchSourceBuilder.size(1000);
@@ -377,8 +340,10 @@ public class DemoEsApplicationTests {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         sourceBuilder.from(0);
 
-        MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder = QueryBuilders.matchPhrasePrefixQuery("欧洲发达国家.keyword", "德国");
-        BoolQueryBuilder bool = QueryBuilders.boolQuery().must(matchPhrasePrefixQueryBuilder);
+        List<String> list3 = new ArrayList<>();
+        list3.add("德国");
+        TermsQueryBuilder bool = QueryBuilders.termsQuery("欧洲发达国家.keyword", list3);
+
         List<String> list = new ArrayList<>();
         list.add("2");
         list.add("3");
